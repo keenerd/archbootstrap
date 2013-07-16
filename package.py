@@ -10,6 +10,8 @@ name_extract = lambda name, dashes: '-'.join(name.split('-')[:-dashes])
 remove_rel = lambda name: name_extract(name, 1)
 remove_v_r = lambda name: name_extract(name, 2) 
 
+pj = os.path.join
+
 def ver_clean(n):
     n = n.strip()
     for c in '><:=':
@@ -188,12 +190,12 @@ class Package:
 
         self.__parse_pkginfo()
         self.rootpath = rootpath
-        self.localname="-".join([self.pkginfo['pkgname'], self.pkginfo['pkgver']])
-        self.localpath = '/'.join([rootpath, '/var/lib/pacman/local/', self.localname]) 
-        self.installfile = '/'.join([self.localpath, 'install'])
-        self.descfile = '/'.join([self.localpath, 'desc'])
-        self.filesfile = '/'.join([self.localpath, 'files'])
-        self.mtreefile = "/".join([self.localpath, "mtree"])
+        self.localname = self.pkginfo['pkgname'] + '-' + self.pkginfo['pkgver']
+        self.localpath = pj(rootpath, '/var/lib/pacman/local/', self.localname) 
+        self.installfile = pj(self.localpath, 'install')
+        self.descfile = pj(self.localpath, 'desc')
+        self.filesfile = pj(self.localpath, 'files')
+        self.mtreefile = pj(self.localpath, "mtree")
 
     def __parse_pkginfo(self):
         self.pkginfo = {}
@@ -279,15 +281,15 @@ class Package:
                 for provide in self.pkginfo['provides']:
                     descfile.write("{}\n".format(provide))
             descfile.write('\n')
-            os.remove("/".join([self.rootpath, '.PKGINFO']))
+            os.remove(pj(self.rootpath, '.PKGINFO'))
 
     def installfile_fun(self):
         if ".INSTALL" in self.file_list:
-            src = "/".join([self.rootpath, ".INSTALL"])
+            src = pj(self.rootpath, ".INSTALL")
             shutil.move(src, self.installfile)
 
     def get_md5sum(self, backup_file):
-        tmpfile = open("/".join([self.rootpath, backup_file]), 'rb')
+        tmpfile = open(pj(self.rootpath, backup_file), 'rb')
         ret = hashlib.md5(tmpfile.read()).hexdigest()
         tmpfile.close()
         return ret
@@ -308,7 +310,7 @@ class Package:
 
     def mtreefile_fun(self):
         if '.MTREE' in self.file_list:
-            src = "/".join([self.rootpath, ".MTREE"])
+            src = pj(self.rootpath, ".MTREE")
             shutil.move(src, self.mtreefile)
 
     def extractfiles(self):

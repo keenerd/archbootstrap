@@ -12,13 +12,15 @@ try:
 except ImportError:
     from urllib import urlretrieve
 
+pj = os.path.join
+
 def base_system(mirror, rootpath='/mnt/', devel=False):
     installed_packages = []
     arch = os.uname()[-1]
     if os.path.isfile(mirror):
         db = Repo(mirror)
     else:
-        coredb = '/'.join([mirror, 'core', 'os', arch, 'core.db'])
+        coredb = pj(mirror, 'core', 'os', arch, 'core.db')
         urlretrieve(coredb, '/tmp/coredb')
         db = Repo('/tmp/coredb')
     base_packages = db.group_members('base')
@@ -29,15 +31,15 @@ def base_system(mirror, rootpath='/mnt/', devel=False):
     print('\n'.join(base_packages | base_depends))
     return
     
-    cache_location = '/'.join([rootpath, 'var/cache/pacman/pkg/'])
+    cache_location = pj(rootpath, 'var/cache/pacman/pkg/')
     # exist_ok is not in py2
     os.makedirs(cache_location, exist_ok=1)
 
     for pkg in base_packages | base_depends:
         filename = '{}-{}-{}.pkg.tar.xz'.format(db[pkg]['NAME'], db[pkg]['VERSION'], db[pkg]['ARCH'])
 
-        downloadfile = '/'.join([cache_location, filename])
-        url = '/'.join([mirror, 'core', 'os', arch, filename])
+        downloadfile = pj(cache_location, filename)
+        url = pj(mirror, 'core', 'os', arch, filename)
         print(url)
         continue
         urlretrieve(url, downloadfile)
@@ -49,10 +51,10 @@ def base_system(mirror, rootpath='/mnt/', devel=False):
 
     return
 
-    call(['mount', '-R', '/dev/', '/'.join([rootpath, 'dev/'])])
-    call(['mount', '-R', '/sys/', '/'.join([rootpath, 'sys/'])])
-    call(['mount', '-R', '/proc/', '/'.join([rootpath, 'proc/'])])
-    shutil.copyfile('/etc/resolv.conf', os.path.join(rootpath, '/etc/resolv.conf'))
+    call(['mount', '-R', '/dev/', pj(rootpath, 'dev/')])
+    call(['mount', '-R', '/sys/', pj(rootpath, 'sys/')])
+    call(['mount', '-R', '/proc/', pj(rootpath, 'proc/')])
+    shutil.copyfile('/etc/resolv.conf', pj(rootpath, '/etc/resolv.conf'))
     os.chroot(rootpath)
     shutil.copyfile('./all_post_install', '/all_post_install')
     subprocess.call(["bash", '/all_post_install'])
