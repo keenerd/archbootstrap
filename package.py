@@ -11,6 +11,7 @@ remove_rel = lambda name: name_extract(name, 1)
 remove_v_r = lambda name: name_extract(name, 2) 
 
 pj = os.path.join
+basename = os.path.basename
 
 def ver_clean(n):
     n = n.strip()
@@ -21,8 +22,11 @@ def ver_clean(n):
 class Repo(object):
     """
     """
-    def __init__(self, tar_path):
-        self.tree = self.load_repo_tgz(tar_path)
+    def __init__(self, repo_path):
+        if os.path.isdir(repo_path):
+            self.tree = self.load_repo_dir(repo_path)
+        else:
+            self.tree = self.load_repo_tgz(repo_path)
     
     def __getitem__(self, key):
         "smart enough to do partial matches"
@@ -59,6 +63,20 @@ class Repo(object):
             if name in tree:
                 # stack desc and depends
                 # (blame Dan why they are not in one file)
+                tree[name].info.update(desc.info)
+            else:
+                tree[name] = desc
+        return tree
+
+    def load_repo_dir(self, dir_path):
+        db = [(basename(p),f) for p,ds,fs in os.walk(dir_path) for f in fs]
+        tree = {}
+        for name,sub in db:
+            # skipping changelog, install, mtree
+            if sub not in ['desc', 'files']:
+                continue
+            desc = DescParse(open(pj(dir_path, name, sub)))
+            if name in tree:
                 tree[name].info.update(desc.info)
             else:
                 tree[name] = desc
@@ -130,7 +148,7 @@ class DescParse(object):
     def desc_clean(self, info):
         "returns a new dictionary"
         singles = 'NAME VERSION DESC URL ARCH'.split()
-        integers = 'SIZE CSIZE ISIZE INSTALLDATE BUILDDATE'.split()
+        integers = 'SIZE CSIZE ISIZE INSTALLDATE BUILDDATE REASON'.split()
         info2 = {}
         for k in singles + integers:
             if k not in info:
