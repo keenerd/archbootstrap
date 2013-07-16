@@ -12,8 +12,7 @@ try:
 except ImportError:
     from urllib import urlretrieve
 
-def base_system(mirror, rootpath='/mnt/', devel=0):
-    devel = 0
+def base_system(mirror, rootpath='/mnt/', devel=False):
     installed_packages = []
     arch = os.uname()[-1]
     if os.path.isfile(mirror):
@@ -23,6 +22,8 @@ def base_system(mirror, rootpath='/mnt/', devel=0):
         urlretrieve(coredb, '/tmp/coredb')
         db = Repo('/tmp/coredb')
     base_packages = db.group_members('base')
+    if devel:
+        base_packages |= db.group_members('base-devel')
     base_packages = set(remove_v_r(p) for p in base_packages)
     base_depends = db.depends(base_packages)
     print('\n'.join(base_packages | base_depends))
@@ -65,8 +66,8 @@ if __name__ == '__main__':
                         help='Mirror to download from')
     parser.add_argument( '-r', '--root', nargs=1, required=True,
                         help='Destination to install to')
-    parser.add_argument( '-d', '--devel', nargs=1, 
-                         default=0, help='And base-devel')
+    parser.add_argument( '-d', '--devel', action='store_true', 
+                         default=False, help='And base-devel')
     args = parser.parse_args()
     base_system(args.mirror[0], args.root[0], args.devel)
 
